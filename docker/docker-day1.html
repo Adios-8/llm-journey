@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker 基础 — W1 Day 3-4 · 地基三件套</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117; --card: #161b22; --border: #30363d;
+      --text: #c9d1d9; --muted: #8b949e; --accent: #58a6ff;
+      --green: #3fb950; --orange: #d2991d; --red: #f85149; --purple: #a371f7;
+      --cyan: #39c5cf;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      line-height: 1.7; padding: 40px 24px 60px;
+    }
+    .page-wrapper { max-width: 1200px; margin: 0 auto; display: flex; gap: 32px; align-items: flex-start; }
+    .main-content { flex: 1; min-width: 0; }
+    .side-index { position: sticky; top: 20px; width: 200px; flex-shrink: 0; }
+    .side-index .idx-title {
+      font-size: 0.78rem; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; padding-left: 4px;
+    }
+    .side-index a {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; border-radius: 6px; color: var(--muted);
+      text-decoration: none; font-size: 0.82rem; transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+    .side-index a:hover { color: #fff; background: #1c2128; }
+    .side-index a.active { color: var(--accent); border-left-color: var(--accent); background: #111a24; }
+    .side-index .idx-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-m1  { background: var(--red); }
+    .dot-m2  { background: var(--orange); }
+    .dot-m3  { background: var(--green); }
+    .dot-m4  { background: var(--accent); }
+    .dot-m5  { background: var(--cyan); }
+    .dot-m6  { background: var(--purple); }
+    .dot-m7  { background: var(--orange); }
+    .dot-m8  { background: var(--green); }
+    .dot-m9  { background: var(--accent); }
+
+    h1 { font-size: 2rem; color: #fff; margin-bottom: 8px; }
+    h2 { font-size: 1.35rem; color: var(--accent); margin: 36px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.05rem; color: #fff; margin: 20px 0 8px; }
+    .meta { color: var(--muted); font-size: 0.95rem; margin-bottom: 24px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px 24px; margin: 16px 0;
+    }
+    .card-blue   { border-left: 3px solid var(--accent); }
+    .card-green  { border-left: 3px solid var(--green); }
+    .card-orange { border-left: 3px solid var(--orange); }
+    .card-purple { border-left: 3px solid var(--purple); }
+    .card-red    { border-left: 3px solid var(--red); }
+    .card-cyan   { border-left: 3px solid var(--cyan); }
+
+    #mindmap {
+      width: 100%; height: 420px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; margin: 16px 0;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+    code {
+      background: #1c2128; padding: 2px 7px;
+      border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.9rem;
+    }
+    pre {
+      background: #0d1117; border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 20px; overflow-x: auto;
+      margin: 12px 0; font-size: 0.88rem; line-height: 1.6;
+    }
+    pre code { background: none; padding: 0; }
+    .tag {
+      display: inline-block; background: #1c2128; color: var(--accent);
+      border: 1px solid var(--border); border-radius: 99px;
+      padding: 3px 12px; font-size: 0.82rem; margin: 2px 4px 6px 0;
+    }
+    .tag-green  { color: var(--green); }
+    .tag-orange { color: var(--orange); }
+    .tag-red    { color: var(--red); }
+    .tag-purple { color: var(--purple); }
+    .highlight { color: var(--orange); font-weight: 600; }
+    .note { font-size: 0.9rem; color: var(--muted); padding: 8px 0; }
+
+    @media (max-width: 900px) {
+      .page-wrapper { flex-direction: column; }
+      .side-index { position: static; width: 100%; display: flex; flex-wrap: wrap; gap: 4px; }
+      .side-index a { font-size: 0.75rem; padding: 5px 8px; }
+      .side-index .idx-title { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+<nav class="side-index">
+  <div class="idx-title">📋 模块导航</div>
+  <a href="#sec-m1"><span class="idx-dot dot-m1"></span> 1. 为什么 Docker</a>
+  <a href="#sec-m2"><span class="idx-dot dot-m2"></span> 2. 虚拟机 vs 容器</a>
+  <a href="#sec-m3"><span class="idx-dot dot-m3"></span> 3. 三大核心对象</a>
+  <a href="#sec-m4"><span class="idx-dot dot-m4"></span> 4. Docker 架构</a>
+  <a href="#sec-m5"><span class="idx-dot dot-m5"></span> 5. 基本操作实战</a>
+  <a href="#sec-m6"><span class="idx-dot dot-m6"></span> 6. Dockerfile 编写</a>
+  <a href="#sec-m7"><span class="idx-dot dot-m7"></span> 7. Docker Compose</a>
+  <a href="#sec-m8"><span class="idx-dot dot-m8"></span> 8. Layer 层原理</a>
+  <a href="#sec-m9"><span class="idx-dot dot-m9"></span> 9. 总结 + 命令清单</a>
+</nav>
+
+<main class="main-content">
+
+<h1>🐳 Docker 基础 · W1 Day 3-4</h1>
+<p class="meta">📅 2026-06-23 ｜ ⏱️ 9 模块 ｜ 🏷️ 地基三件套 · Docker入门 ｜ 📺 <a href="https://www.bilibili.com/video/BV1sRcKeWExJ/" style="color:var(--accent)">B站 InkkaPlum 频道</a></p>
+
+<div class="card card-blue">
+  <strong>⬅ 前置依赖：</strong> Linux 50 常用命令（W1 Day 1-2）✅ ｜ 后面承接：Day 5 把 Python 脚本打包成 Docker 镜像 → 🏆 作品0 FastAPI CRUD 服务
+</div>
+
+<!-- ============ 1. 为什么 Docker ============ -->
+<h2 id="sec-m1">🧭 1. 为什么需要 Docker</h2>
+
+<h3>1.1 环境的痛苦</h3>
+<div class="card card-red">
+  <p><strong>场景：</strong>项目 = FastAPI + MySQL + Redis，换一台电脑就要：</p>
+  <pre><code>① 装 Python 3.12，配 PATH
+② 装 MySQL 8.0，设 root 密码，建库
+③ 装 Redis
+④ pip install 几十个依赖，祈祷版本兼容</code></pre>
+  <p>任何一步出错，项目跑不起来。<em>"It works on my machine."</em></p>
+</div>
+
+<h3>1.2 Docker 的集装箱思路</h3>
+<div class="card card-blue">
+  <p><strong>把应用程序 + 它需要的所有环境打包成一个"集装箱"。</strong></p>
+  <p>换电脑 → 装 Docker → 拉代码 → <strong>一行命令</strong>，全部跑起来。</p>
+  <p>不需要在新电脑上装 Python、MySQL、Redis，Docker 帮你全搞定。</p>
+</div>
+
+<h3>1.3 Docker 用 Go 开发 + 底层三技术</h3>
+<div class="card card-green">
+  <table>
+    <tr><th>技术</th><th>作用</th><th>通俗理解</th></tr>
+    <tr><td><code>cgroup</code></td><td>限制进程能用的 CPU/内存</td><td>"每个集装箱只能占这么多资源"</td></tr>
+    <tr><td><code>namespace</code></td><td>隔离进程的视角（PID/NET/MNT...）</td><td>"每个集装箱只看到自己的东西"</td></tr>
+    <tr><td><code>OverlayFS</code></td><td>文件系统分层叠加</td><td>"基础层 + 修改层 = 完整文件系统"</td></tr>
+  </table>
+</div>
+
+<h3>1.4 一句话记住</h3>
+<div class="card card-purple">
+  <p><strong>Docker = 把应用装进集装箱，一次打包，到处运行。</strong></p>
+  <p>核心三词：<span class="highlight">Image（镜像）</span>→ 只读模板 · <span class="highlight">Container（容器）</span>→ 运行实例 · <span class="highlight">Registry（仓库）</span>→ 存镜像</p>
+</div>
+
+
+<!-- ============ 2. 虚拟机 vs 容器 ============ -->
+<h2 id="sec-m2">⚖️ 2. 虚拟机 vs 容器</h2>
+
+<h3>2.1 虚拟机思路</h3>
+<div class="card card-red">
+  <pre><code>物理机（Windows）
+  └── Hypervisor（管家层）
+        ├── VM1：完整 Ubuntu 系统  ← 占 4GB
+        ├── VM2：完整 CentOS       ← 占 2GB
+        └── VM3：完整 Windows XP   ← 占 2GB
+
+每个虚拟机自带完整的操作系统，启动慢、占资源。
+一台机器跑四五个就到头。</code></pre>
+</div>
+
+<h3>2.2 容器怎么省掉包袱</h3>
+<div class="card card-green">
+  <pre><code>物理机
+  └── Docker Engine
+        ├── 容器1：Alpine + Redis    ← 只含应用+依赖
+        ├── 容器2：Ubuntu + Python   ← 共享宿主机内核
+        └── 容器3：Alpine + MySQL
+
+没有自己独立的操作系统，没有 Hypervisor 层。
+内核共用，文件系统各自独立（通过 namespace 隔离）。</code></pre>
+</div>
+
+<h3>2.3 数字对比</h3>
+<div class="card card-blue">
+  <table>
+    <tr><th>对比维度</th><th>虚拟机</th><th>容器</th></tr>
+    <tr><td>启动速度</td><td>分钟级</td><td><span class="highlight">秒级</span></td></tr>
+    <tr><td>占用空间</td><td>几个 GB</td><td><span class="highlight">几十 MB</span></td></tr>
+    <tr><td>一台机器能跑</td><td>几个</td><td><span class="highlight">几百个</span></td></tr>
+    <tr><td>有自己内核？</td><td>✅ 完整 OS</td><td>❌ 共享宿主机内核</td></tr>
+    <tr><td>隔离级别</td><td>操作系统级</td><td>进程级</td></tr>
+  </table>
+  <p class="note">💡 内核 = 地基（只有一份），文件系统 = 装修（每个容器各装各的）</p>
+</div>
+
+
+<!-- ============ 3. 三大核心对象 ============ -->
+<h2 id="sec-m3">📦 3. 三大核心对象</h2>
+
+<div class="card card-green">
+  <table>
+    <tr><th>对象</th><th>是什么</th><th>类比</th><th>读写</th></tr>
+    <tr><td><span class="highlight">Image（镜像）</span></td><td>打包好的静态文件快照</td><td>菜谱 / .zip 压缩包</td><td>只读</td></tr>
+    <tr><td><span class="highlight">Container（容器）</span></td><td>镜像运行起来的实例</td><td>按菜谱炒出来的菜</td><td>可读可写</td></tr>
+    <tr><td><span class="highlight">Registry（仓库）</span></td><td>存放镜像的服务器</td><td>GitHub / Docker Hub</td><td>—</td></tr>
+  </table>
+</div>
+
+<h3>3.1 Image（镜像）</h3>
+<div class="card card-blue">
+  <p>镜像 = <strong>环境的完整压缩包</strong>，包含基础系统文件 + 应用 + 依赖 + 配置。静态、只读。</p>
+  <p>一个镜像可以创建无数个容器。Docker 用它<strong>直接创建</strong>容器，不需要"推断"配置。</p>
+</div>
+
+<h3>3.2 Container（容器）</h3>
+<div class="card card-green">
+  <p>每次 <code>docker run</code> 镜像 → 产生一个容器。可读可写、正在运行的进程。</p>
+  <p>同一份 Redis 镜像 → <code>docker run redis</code> 三次 → 三个各管各的容器，数据互不影响。</p>
+</div>
+
+<h3>3.3 Registry &amp; Repository</h3>
+<div class="card card-orange">
+  <pre><code>Registry（注册服务器）= Docker Hub 整个网站
+  └── Repository: redis      ← 某个镜像的"家"
+  │     ├── Tag: latest → Image
+  │     ├── Tag: 7.4    → Image
+  │     └── Tag: 7.2    → Image
+  ├── Repository: mysql
+  │     └── Tag: 8.0    → Image
+  └── Repository: nginx</code></pre>
+  <table>
+    <tr><th>Docker</th><th>GitHub 类比</th></tr>
+    <tr><td>Registry</td><td>github.com 整个网站</td></tr>
+    <tr><td>Repository</td><td>某个仓库（如 Adios-8/llm-journey）</td></tr>
+    <tr><td>Tag</td><td>版本号 / commit 标签</td></tr>
+    <tr><td>Image</td><td>某次 commit 的完整代码快照</td></tr>
+  </table>
+</div>
+
+<h3>3.4 Dockerfile</h3>
+<div class="card card-purple">
+  <p><strong>生成镜像的配方文件。</strong>别人的镜像从 Docker Hub 拉，自己的代码靠 Dockerfile 打包成镜像。</p>
+  <pre><code>Dockerfile（配方） → Image（菜谱） → Container（炒出来的菜）</code></pre>
+</div>
+
+
+<!-- ============ 4. Docker 架构 ============ -->
+<h2 id="sec-m4">🏗️ 4. Docker 架构</h2>
+
+<h3>4.1 Client-Server 架构</h3>
+<div class="card card-blue">
+  <p>Docker 不是一个大程序，而是<strong>两个东西在对话</strong>：</p>
+  <pre><code>你敲 docker run redis
+      ↓
+Docker Client  —— 只负责收发命令
+      ↓  REST API
+Docker Daemon  —— 后台进程 (dockerd)，真正干活的</code></pre>
+</div>
+
+<h3>4.2 三个组成部分</h3>
+<div class="card card-green">
+  <table>
+    <tr><th>组件</th><th>角色</th><th>在哪</th></tr>
+    <tr><td>Docker Client</td><td>传话的，你敲命令的地方</td><td>你的终端</td></tr>
+    <tr><td>Docker Daemon</td><td>干活的，管理镜像/容器/网络</td><td>宿主机后台</td></tr>
+    <tr><td>Registry</td><td>存镜像的远程服务器</td><td>Docker Hub</td></tr>
+  </table>
+</div>
+
+<h3>4.3 一次 docker run 全过程</h3>
+<div class="card card-orange">
+  <pre><code>① 你敲：docker run redis
+② Client 通过 REST API 发给 Daemon
+③ Daemon 检查本地有没有 redis 镜像
+     ├── 有 → 跳到⑤
+     └── 没有 → 自动去 Docker Hub 拉（不是全网搜索）
+④ 分层下载镜像
+⑤ 创建容器并启动</code></pre>
+</div>
+
+<h3>4.4 Registry vs Repository 再确认</h3>
+<div class="card card-purple">
+  <p>一个 Registry 包含多个 Repository，一个 Repository 包含多个 Tag，一个 Tag 对应一个 Image。</p>
+</div>
+
+
+<!-- ============ 5. 基本操作实战 ============ -->
+<h2 id="sec-m5">⌨️ 5. 基本操作实战</h2>
+
+<div class="card card-cyan">
+  <p><strong>本节所有命令已亲手敲过 ✅</strong></p>
+</div>
+
+<h3>5.1 docker pull — 拉镜像</h3>
+<div class="card card-blue">
+  <pre><code>docker pull redis              # 拉最新版
+docker pull redis:7.4          # 指定版本
+docker pull python:3.12-alpine # Alpine 精简版 (~50MB)</code></pre>
+  <p>拉取时看到每一行 <code>Pull complete</code> 就是一个 Layer。</p>
+</div>
+
+<h3>5.2 docker run — 启动容器</h3>
+<div class="card card-green">
+  <pre><code>docker run --name my-redis -d -p 6379:6379 redis</code></pre>
+  <table>
+    <tr><th>参数</th><th>含义</th></tr>
+    <tr><td><code>--name my-redis</code></td><td>给容器起名字，方便后续管理</td></tr>
+    <tr><td><code>-d</code></td><td>后台运行 (detach)，不占终端</td></tr>
+    <tr><td><code>-p 6379:6379</code></td><td>端口映射：宿主机端口:容器内端口</td></tr>
+  </table>
+</div>
+
+<h3>5.3 查看容器</h3>
+<div class="card card-orange">
+  <pre><code>docker ps           # 只看正在运行的容器
+docker ps -a        # 包括已停止的容器</code></pre>
+</div>
+
+<h3>5.4 容器生命周期</h3>
+<div class="card card-purple">
+  <pre><code>docker run 容器名      # ❌ 这是新建！不是重启
+docker start my-redis   # ✅ 启动已存在的容器
+docker stop my-redis    # 停止
+docker restart my-redis # 重启</code></pre>
+  <p class="highlight">⚠️ 关键坑：docker run = 新建+启动，每次 run 产生新容器。重启已停止的容器用 start！</p>
+</div>
+
+<h3>5.5 删除容器 &amp; 镜像</h3>
+<div class="card card-red">
+  <pre><code># 删容器（先停后删）
+docker stop my-redis
+docker rm my-redis
+
+# 删镜像（容器已删才能删镜像）
+docker rmi redis:latest
+
+# 批量清理
+docker container prune    # 删所有已停止容器
+docker image prune        # 删所有未使用镜像</code></pre>
+</div>
+
+
+<!-- ============ 6. Dockerfile ============ -->
+<h2 id="sec-m6">📝 6. 编写自己的 Dockerfile</h2>
+
+<h3>指令一览</h3>
+<div class="card card-blue">
+  <table>
+    <tr><th>指令</th><th>作用</th><th>何时执行</th></tr>
+    <tr><td><code>FROM python:3.12-alpine</code></td><td>指定基础镜像（必须第一条）</td><td>—</td></tr>
+    <tr><td><code>WORKDIR /app</code></td><td>设工作目录，不存在则创建</td><td>—</td></tr>
+    <tr><td><code>COPY . .</code></td><td>复制文件到镜像</td><td>—</td></tr>
+    <tr><td><code>RUN pip install -r requirements.txt</code></td><td>构建时执行命令</td><td>docker build 时</td></tr>
+    <tr><td><code>CMD ["python","main.py"]</code></td><td>容器启动时的默认命令</td><td>docker run 时</td></tr>
+    <tr><td><code>EXPOSE 8080</code></td><td>声明端口（文档作用，不实际映射）</td><td>—</td></tr>
+  </table>
+</div>
+
+<h3>6.1 RUN vs CMD（核心区别）</h3>
+<div class="card card-orange">
+  <pre><code>RUN  →  docker build 时执行（安装依赖、编译代码）
+CMD  →  docker run 时执行（启动应用）
+
+RUN 可以有多个，CMD 只有最后一个生效</code></pre>
+</div>
+
+<h3>6.2 ENTRYPOINT 配合 CMD</h3>
+<div class="card card-green">
+  <pre><code>ENTRYPOINT = 固定的执行程序（不让用户覆盖）
+CMD        = 默认参数（可以被 docker run 后面的参数覆盖）
+
+ENTRYPOINT ["echo"]
+CMD ["Default Message"]
+
+docker run my-image           → Default Message
+docker run my-image "Changed" → Changed  (只覆盖CMD，ENTRYPOINT不变)</code></pre>
+</div>
+
+<h3>6.3 实战：Python HelloWorld 镜像 ✅</h3>
+<div class="card card-purple">
+  <p><strong>main.py</strong></p>
+  <pre><code>print("Hello, Docker!")</code></pre>
+  <p><strong>Dockerfile</strong></p>
+  <pre><code>FROM python:3.12-alpine
+WORKDIR /app
+COPY main.py .
+CMD ["python", "main.py"]</code></pre>
+  <pre><code>docker build -t pythontest:1.0 .
+docker run --name my-python pythontest:1.0
+# 输出：Hello, Docker!</code></pre>
+</div>
+
+<h3>6.4 缓存技巧</h3>
+<div class="card card-blue">
+  <p>先 COPY 依赖文件 → RUN 装依赖 → 再 COPY 代码。改了代码但没改依赖 → 依赖层从缓存拿 → 构建快很多。</p>
+  <pre><code>COPY requirements.txt .    # 先只复制依赖
+RUN pip install -r requirements.txt  # 装依赖（改了代码这层跳过）
+COPY . .                   # 再复制代码</code></pre>
+</div>
+
+
+<!-- ============ 7. Docker Compose ============ -->
+<h2 id="sec-m7">🎼 7. Docker Compose 多容器编排</h2>
+
+<h3>7.1 为什么需要 Compose</h3>
+<div class="card card-red">
+  <p>Docker 理念是<strong>单进程容器</strong>：一个容器只干一件事。实际项目需要多个容器协同：</p>
+  <pre><code>✅ 容器1: FastAPI 后端     ❌ 一个容器里塞
+✅ 容器2: MySQL 数据库         FastAPI+MySQL+Redis
+✅ 容器3: Redis 缓存</code></pre>
+  <p>Compose = 用一个 YAML 文件定义所有容器，一条命令全启动。</p>
+</div>
+
+<h3>7.2 YAML 格式 &amp; 关键配置项</h3>
+<div class="card card-blue">
+  <table>
+    <tr><th>配置项</th><th>作用</th><th>例子</th></tr>
+    <tr><td><code>image</code></td><td>用现成镜像</td><td><code>mysql:8.0</code></td></tr>
+    <tr><td><code>build</code></td><td>从 Dockerfile 构建</td><td><code>context: .</code></td></tr>
+    <tr><td><code>ports</code></td><td>端口映射</td><td><code>"8080:8080"</code></td></tr>
+    <tr><td><code>environment</code></td><td>设环境变量</td><td><code>MYSQL_ROOT_PASSWORD: pwd</code></td></tr>
+    <tr><td><code>volumes</code></td><td>挂载数据卷（持久化）</td><td><code>mysql_data:/var/lib/mysql</code></td></tr>
+    <tr><td><code>depends_on</code></td><td>启动顺序依赖</td><td>先启 mysql 再启 backend</td></tr>
+    <tr><td><code>restart: always</code></td><td>容器挂了自动重启</td><td>数据库必备</td></tr>
+  </table>
+</div>
+
+<h3>7.3 数据卷（Volumes）— 三种类型</h3>
+<div class="card card-green">
+  <table>
+    <tr><th>类型</th><th>写法</th><th>场景</th></tr>
+    <tr><td><span class="highlight">命名卷</span></td><td><code>mysql_data:/var/lib/mysql</code></td><td>数据库持久化（最常用）</td></tr>
+    <tr><td><span class="highlight">宿主机卷</span></td><td><code>./html:/usr/share/nginx/html</code></td><td>开发时实时同步文件</td></tr>
+    <tr><td>匿名卷</td><td><code>/app/data</code></td><td>不推荐，删了不好找</td></tr>
+  </table>
+  <p><strong>容器的文件系统是临时的</strong>，容器删了数据就丢。卷把数据存到宿主机，跟容器生命周期分离。</p>
+</div>
+
+<h3>7.4 Redis 持久化</h3>
+<div class="card card-orange">
+  <table>
+    <tr><th>方式</th><th>原理</th><th>特点</th></tr>
+    <tr><td>RDB</td><td>隔一段时间拍内存快照存硬盘</td><td>省资源，间隔内数据可能丢</td></tr>
+    <tr><td>AOF</td><td>记录每次写操作到日志</td><td>更安全，文件更大</td></tr>
+  </table>
+</div>
+
+<h3>7.5 实战：MySQL + Redis 双容器 ✅</h3>
+<div class="card card-purple">
+  <p><strong>docker-compose.yml</strong></p>
+  <pre><code>services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: testdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mysql_data:
+  redis_data:</code></pre>
+  <pre><code>docker compose up -d      # 全启动
+docker ps                  # 看到两个容器
+docker compose down        # 全清理（卷保留）</code></pre>
+</div>
+
+<h3>7.6 代码中获取环境变量</h3>
+<div class="card card-blue">
+  <pre><code># docker-compose.yml
+environment:
+  DB_HOST: mysql
+  DB_PASSWORD: password
+
+# Python 代码
+import os
+db_host = os.getenv("DB_HOST")  # 拿到 "mysql"</code></pre>
+</div>
+
+<h3>7.7 .env 安全实践</h3>
+<div class="card card-green">
+  <p>密码不写死在 yml 里 → 用 <code>.env</code> 文件存敏感信息 → <code>.gitignore</code> 忽略 → 不上传 GitHub。</p>
+  <pre><code># .env 文件
+DB_PASSWORD=password
+
+# docker-compose.yml 里引用
+environment:
+  DB_PASSWORD: ${DB_PASSWORD}</code></pre>
+</div>
+
+
+<!-- ============ 8. Layer 原理 ============ -->
+<h2 id="sec-m8">🧱 8. Docker Layer 层原理</h2>
+
+<h3>8.1 镜像由层组成</h3>
+<div class="card card-blue">
+  <p>每次 <code>docker pull</code> 看到的每一行就是一个层：</p>
+  <pre><code>docker history python:3.12-alpine
+# CMD ["python3"]          0B       ← 顶
+# RUN apk add ...python   44.1MB    ← 装 Python 本体
+# RUN apk add ...certs     2.79MB   ← 装依赖
+# ENV LANG=C.UTF-8         0B       ← 环境变量
+# ADD alpine-minirootfs..  9.07MB   ← Alpine 基础（底）</code></pre>
+  <p>ENV/CMD 层大小 0B（只是元数据），RUN 装的包越大层越大。</p>
+</div>
+
+<h3>8.2 Copy-on-Write（写入时复制）</h3>
+<div class="card card-green">
+  <p><strong>镜像每一层是只读的。当容器要"修改"某文件时：</strong></p>
+  <pre><code>① 从镜像只读层找到该文件
+② 复制到容器专用可写层
+③ 在可写层修改
+
+其他容器看到的还是原文件，不受影响。</code></pre>
+  <p class="note">💡 10 个容器共享同一份镜像文件 → 只占一份磁盘空间。改了才复制。</p>
+</div>
+
+<h3>8.3 层复用省空间</h3>
+<div class="card card-orange">
+  <p>镜像 A 和镜像 B 都基于 python:3.12-alpine → 基础层 56MB 只存一份，A 和 B 共享。</p>
+</div>
+
+<h3>8.4 层和容器的关系</h3>
+<div class="card card-purple">
+  <pre><code>┌──────────────────┐
+│  容器可写层        │  ← 每个容器独有，可读写
+├──────────────────┤
+│  你的代码层        │  ← 只读
+├──────────────────┤
+│  依赖层            │  ← 只读
+├──────────────────┤
+│  Alpine 基础层     │  ← 只读
+└──────────────────┘
+
+镜像 = 冻结的只读层叠
+容器 = 在镜像上叠加一层自己的可写层 (Container Layer)</code></pre>
+</div>
+
+
+<!-- ============ 9. 总结 ============ -->
+<h2 id="sec-m9">🗺️ 9. 总结 &amp; 知识图谱</h2>
+
+<div id="mindmap"></div>
+
+<h3>今日实战命令清单 ✅</h3>
+<div class="card card-green">
+  <pre><code># 拉镜像
+docker pull redis
+docker pull python:3.12-alpine
+
+# 启动容器
+docker run --name my-redis -d -p 6379:6379 redis
+
+# 查看
+docker ps / docker ps -a
+docker image ls
+
+# 生命周期
+docker stop my-redis / docker start my-redis
+
+# 删除
+docker rm my-redis / docker rmi redis:latest
+
+# 构建自己的镜像
+docker build -t pythontest:1.0 .
+docker run --name my-python pythontest:1.0
+
+# Compose 多容器
+docker compose up -d / docker compose down
+
+# 查看镜像层
+docker history python:3.12-alpine</code></pre>
+</div>
+
+<h3>📋 我的练习代码</h3>
+<div class="card card-purple">
+  <p><strong>📁 代码位置：</strong><code>C:\AIwork\ai\docker-test\</code></p>
+</div>
+
+<h4>文件 1：main.py</h4>
+<div class="card card-blue">
+  <pre><code>print("Hello, Docker!")</code></pre>
+</div>
+
+<h4>文件 2：Dockerfile</h4>
+<div class="card card-green">
+  <pre><code>FROM python:3.12-alpine
+WORKDIR /app
+COPY main.py .
+CMD ["python", "main.py"]</code></pre>
+</div>
+
+<h4>文件 3：docker-compose.yml</h4>
+<div class="card card-orange">
+  <pre><code>services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: testdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mysql_data:
+  redis_data:</code></pre>
+</div>
+
+<h4>终端实测记录</h4>
+<div class="card card-cyan">
+  <pre><code># docker pull redis
+1430dee9b11c: Pull complete
+72c03230f136: Pull complete
+...
+Status: Downloaded newer image for redis:latest
+
+# docker run --name my-redis -d -p 6379:6379 redis
+256684d6d50aa454a26a99778ead5635beba04e60194719ab984fa3a1930fe3a
+
+# docker ps
+CONTAINER ID   IMAGE     STATUS          PORTS                                         NAMES
+256684d6d50a   redis     Up 9 seconds    0.0.0.0:6379->6379/tcp                       my-redis
+
+# docker stop my-redis → docker ps -a
+STATUS: Exited (0) 7 seconds ago
+
+# docker start my-redis → docker ps -a
+STATUS: Up 12 seconds
+
+# 清理：stop → rm → rmi
+Untagged: redis:latest
+Deleted: sha256:0a972391db0b...
+
+# docker build -t pythontest:1.0 .
+[1/3] FROM python:3.12-alpine
+[2/3] WORKDIR /app
+[3/3] COPY main.py .
+exporting → naming to docker.io/library/pythontest:1.0  ✅
+
+# docker run --name my-python pythontest:1.0
+Hello, Docker!
+
+# docker compose up -d
+✔ Container mysql  Started
+✔ Container redis  Started
+
+# docker ps
+CONTAINER ID   IMAGE          PORTS
+7e3633792a13   redis:latest   0.0.0.0:6379->6379/tcp   redis
+bad5515dcef3   mysql:8.0      0.0.0.0:3306->3306/tcp   mysql
+
+# docker compose down
+✔ Container redis  Removed
+✔ Container mysql  Removed
+✔ Network docker-test_default  Removed
+
+# docker history python:3.12-alpine
+CMD ["python3"]         0B
+RUN apk add ...python   44.1MB
+...
+ADD alpine-minirootfs   9.07MB    ← 底层</code></pre>
+</div>
+
+<h3>9 模块串联</h3>
+<div class="card card-blue">
+  <pre><code>问题：换电脑重装环境
+  ↓
+方案：打包成集装箱（容器）
+  ↓
+优势：比虚拟机轻量 100 倍（共享内核，无 Guest OS）
+  ↓
+核心：Image(只读文件包) → Container(运行实例) → Registry(存镜像)
+  ↓
+架构：Client 传话 → Daemon 干活 → Registry 供镜像
+  ↓
+操作：pull → run → ps → stop/start → rm → rmi → prune
+  ↓
+自制：Dockerfile → docker build → docker run 你自己的镜像
+  ↓
+多容器：docker-compose.yml → docker compose up 全启动
+  ↓
+原理：镜像层层叠加(只读) + 容器层(可写) + CoW 省空间</code></pre>
+</div>
+
+<h3>核心对比速查</h3>
+<div class="card card-orange">
+  <table>
+    <tr><th>概念</th><th>是什么</th><th>写在哪个文件</th><th>何时执行</th></tr>
+    <tr><td><code>FROM</code></td><td>基础镜像</td><td>Dockerfile 第一条</td><td>—</td></tr>
+    <tr><td><code>RUN</code></td><td>构建时命令</td><td>Dockerfile</td><td>docker build</td></tr>
+    <tr><td><code>CMD</code></td><td>容器启动命令</td><td>Dockerfile</td><td>docker run</td></tr>
+    <tr><td><code>ENTRYPOINT</code></td><td>固定入口（不被覆盖）</td><td>Dockerfile</td><td>docker run</td></tr>
+    <tr><td><code>build</code></td><td>从 Dockerfile 构建</td><td>docker-compose.yml</td><td>compose up</td></tr>
+    <tr><td><code>volumes</code></td><td>数据持久化</td><td>docker-compose.yml</td><td>compose up</td></tr>
+    <tr><td><code>depends_on</code></td><td>启动顺序</td><td>docker-compose.yml</td><td>compose up</td></tr>
+  </table>
+</div>
+
+<div class="card card-green" style="margin-top:24px">
+  <strong>➡ 下一步：</strong> W1 Day 5 — 把前面写的 Python 脚本打包成 Docker 镜像 → 🏆 作品0：FastAPI CRUD 服务（W2-3）
+</div>
+
+</main>
+</div>
+
+<script>
+(function() {
+  var chart = echarts.init(document.getElementById('mindmap'));
+  var data = {
+    name: '🐳 Docker 基础',
+    children: [
+      { name: '为什么用', children: [
+        { name: '环境痛点' }, { name: '集装箱隐喻' }, { name: 'cgroup/namespace/OverlayFS' }
+      ]},
+      { name: 'vs 虚拟机', children: [
+        { name: '无 Hypervisor' }, { name: '无 Guest OS' }, { name: '进程级隔离' }, { name: '秒启/几十MB/百个' }
+      ]},
+      { name: '三核心', children: [
+        { name: 'Image 只读模板' }, { name: 'Container 运行实例' }, { name: 'Registry 存镜像' }, { name: 'Dockerfile 配方' }
+      ]},
+      { name: '架构', children: [
+        { name: 'Client 传话' }, { name: 'Daemon 干活' }, { name: 'Registry 供镜像' }
+      ]},
+      { name: '基本操作', children: [
+        { name: 'pull/run/ps' }, { name: 'start/stop/restart' }, { name: 'rm/rmi/prune' }
+      ]},
+      { name: 'Dockerfile', children: [
+        { name: 'FROM/WORKDIR' }, { name: 'COPY' }, { name: 'RUN vs CMD' }, { name: 'ENTRYPOINT' }, { name: 'EXPOSE' }
+      ]},
+      { name: 'Compose', children: [
+        { name: 'docker-compose.yml' }, { name: 'services/build/ports' }, { name: 'depends_on/restart' }, { name: 'volumes 三种卷' }, { name: '.env 安全' }
+      ]},
+      { name: 'Layer 原理', children: [
+        { name: '镜像层层叠加' }, { name: 'CoW 写入时复制' }, { name: '容器层可读写' }, { name: '层复用省空间' }
+      ]}
+    ]
+  };
+  chart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'item' },
+    series: [{
+      type: 'treemap',
+      width: '100%', height: '100%',
+      roam: false, nodeClick: false,
+      breadcrumb: { show: false },
+      label: { show: true, formatter: '{b}', fontSize: 12, color: '#c9d1d9' },
+      upperLabel: { show: true, height: 30, fontSize: 13, color: '#8b949e', backgroundColor: 'transparent' },
+      itemStyle: { borderColor: '#0d1117', borderWidth: 2, gapWidth: 2 },
+      levels: [
+        { colorMappingBy: 'value', itemStyle: { gapWidth: 1 } },
+        { colorSaturation: [0.35, 0.5], itemStyle: { gapWidth: 1 }, upperLabel: { show: true } },
+        { colorSaturation: [0.2, 0.45] }
+      ],
+      color: ['#58a6ff','#3fb950','#d2991d','#f85149','#a371f7','#39c5cf'],
+      data: [data]
+    }]
+  });
+  window.addEventListener('resize', function() { chart.resize(); });
+})();
+</script>
+
+</body>
+</html>
